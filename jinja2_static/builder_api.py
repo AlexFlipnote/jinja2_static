@@ -32,7 +32,7 @@ class Builder(Flask):
         except FileNotFoundError:
             raise FileNotFoundError(f"[-] File not found: {filename}")
 
-        re_args = re.compile(r"^\-\-\-\n(.*)\n\-\-\-$", flags=re.MULTILINE)
+        re_args = re.compile(r"^\-\-\-(.*)\-\-\-", flags=re.DOTALL)
         get_arg = re.compile(r"([a-zA-Z0-9\_]{1,})(?:\: |\:)(.*)")
         temp_args = {}
 
@@ -68,9 +68,9 @@ class Builder(Flask):
 
                 if file.endswith(".md"):
                     md_path = paths.replace("\\", "/")
-                    mark, args = self.import_markdown(f"{md_path}/{file}")
-                    if "layout" in args:
-                        filename_render = f"layouts/{args['layout']}"
+                    mark, mark_args = self.import_markdown(f"{md_path}/{file}")
+                    if "layout" in mark_args:
+                        filename_render = f"layouts/{mark_args['layout']}"
                         kwargs["markdown"] = mark
                     else:
                         print(f"[-] No layout specified for {filename}, using default")
