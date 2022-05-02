@@ -103,4 +103,4 @@ class Builder(Flask):
                 print(f"[-] Compile error | {type(e).__name__}:\n{e}")
             print(f"[+] Done, compiled to {self.config['FREEZER_DESTINATION']}")
         else:
-            self.run(port=self._port)
+            self.run(port=self._port, debug=True)
