@@ -3,7 +3,7 @@ import os
 import markdown
 import re
 
-from flask import Flask, render_template
+from flask import Flask, render_template, render_template_string
 from flask_frozen import Freezer
 
 
@@ -79,17 +79,20 @@ class Builder(Flask):
                     for key, value in kwargs.items():
                         md_kwargs[key] = value
 
-                    if "layout" in mark_args:
-                        to_render = f"layouts/{mark_args['layout']}", md_kwargs
-                    else:
-                        to_render = filename_render, md_kwargs
-                        print(f"[-] No layout specified for {filename}, using default")
+                    has_layout = mark_args.get("layout", None)
+
+                    if has_layout:
+                        to_render = f"layouts/{mark_args['layout']}", md_kwargs, render_template
 
                     md_kwargs["markdown"] = self.jinja_env.from_string(markdown.markdown(mark)).render(**md_kwargs)
 
+                    if not has_layout:
+                        to_render = md_kwargs["markdown"], md_kwargs, render_template_string
+                        print(f"[-] No layout specified for '{self}', using default")
+
                     self.add_url_rule(
                         url_path, f"{filename}_{secrets.token_hex(16)}",
-                        view_func=lambda x=to_render: render_template(x[0], **x[1]),
+                        view_func=lambda x=to_render: x[2](x[0], **x[1]),
                     )
                 else:
                     self.add_url_rule(
