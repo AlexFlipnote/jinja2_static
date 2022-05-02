@@ -46,9 +46,6 @@ class Builder(Flask):
         data = re_args.sub("", data)
         return markdown.markdown(data), temp_args
 
-    def _static(self, path: str):
-        return f"{self._static}/{path}"
-
     def generate(self, debug: bool = False, **kwargs) -> None:
         """ Generate the sites, kwargs are the arguments to pass to the template """
         for paths, dirs, files in os.walk(self._templates):
@@ -68,8 +65,6 @@ class Builder(Flask):
                     url_path = f"{path}/{filename}/" if path else f"/{filename}/"
 
                 filename_render = f"{path}/{file}" if path else f"{file}"
-
-                kwargs["static"] = self._static
 
                 if file.endswith(".md"):
                     md_path = paths.replace("\\", "/")
