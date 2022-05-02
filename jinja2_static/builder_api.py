@@ -67,22 +67,29 @@ class Builder(Flask):
                 filename_render = f"{path}/{file}" if path else f"{file}"
 
                 if file.endswith(".md"):
+                    md_kwargs = {}
                     md_path = paths.replace("\\", "/")
                     mark, mark_args = self.import_markdown(f"{md_path}/{file}")
-                    if "layout" in mark_args:
-                        filename_render = f"layouts/{mark_args['layout']}"
-                        kwargs["markdown"] = mark
-                    else:
-                        print(f"[-] No layout specified for {filename}, using default")
 
                     for key, value in mark_args.items():
                         if key.lower() in ["layout", "markdown"]:
                             continue
-                        kwargs[key] = value
+                        md_kwargs[key] = value
+
+                    for key, value in kwargs.items():
+                        md_kwargs[key] = value
+
+                    if "layout" in mark_args:
+                        to_render = f"layouts/{mark_args['layout']}", md_kwargs
+                    else:
+                        to_render = filename_render, md_kwargs
+                        print(f"[-] No layout specified for {filename}, using default")
+
+                    md_kwargs["markdown"] = self.jinja_env.from_string(markdown.markdown(mark)).render(**md_kwargs)
 
                     self.add_url_rule(
                         url_path, f"{filename}_{secrets.token_hex(16)}",
-                        view_func=lambda x=filename_render: render_template(x, **kwargs),
+                        view_func=lambda x=to_render: render_template(x[0], **x[1]),
                     )
                 else:
                     self.add_url_rule(
