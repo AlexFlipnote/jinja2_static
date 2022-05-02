@@ -75,7 +75,7 @@ class Builder(Flask):
                     else:
                         print(f"[-] No layout specified for {filename}, using default")
 
-                    for key, value in kwargs.items():
+                    for key, value in mark_args.items():
                         if key.lower() in ["layout", "markdown"]:
                             continue
                         kwargs[key] = value
