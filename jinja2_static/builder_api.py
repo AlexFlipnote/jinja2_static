@@ -26,6 +26,7 @@ class Builder(Flask):
         )
 
     def import_markdown(self, filename: str) -> list[str, dict]:
+        """ Used to read Markdown files and convert to HTML while also providing arguments to the template """
         try:
             with open(filename, "r") as f:
                 data = f.read()
