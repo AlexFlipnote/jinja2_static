@@ -1,0 +1,11 @@
+@import 'test';
+
+h1 {
+  content: 'memes';
+  display: flex;
+  justify-content: center;
+
+  .capitalize {
+    text-transform: capitalize;
+  }
+}

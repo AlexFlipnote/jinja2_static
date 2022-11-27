@@ -2,6 +2,7 @@ import secrets
 import os
 import markdown
 import re
+import sass
 
 from flask import Flask, render_template, render_template_string
 from flask_frozen import Freezer
@@ -20,10 +21,22 @@ class Builder(Flask):
         )
 
         self.freezer = Freezer(self)
+        self._extra_dirs = []
         self.config.update(
             FREEZER_DESTINATION=self._dist,
             FREEZER_DEFAULT_MIMETYPE="text/html",
         )
+
+    @property
+    def _extra_file_watcher(self):
+        extra_files = []
+        for extra_dir in self._extra_dirs:
+            for dirname, dirs, files in os.walk(extra_dir):
+                for filename in files:
+                    filename = os.path.join(dirname, filename)
+                    if os.path.isfile(filename):
+                        extra_files.append(filename)
+        return extra_files
 
     def import_markdown(self, filename: str) -> list[str, dict]:
         """ Used to read Markdown files and convert to HTML while also providing arguments to the template """
@@ -46,6 +59,23 @@ class Builder(Flask):
 
         data = re_args.sub("", data)
         return markdown.markdown(data), temp_args
+
+    def sass_compiler(self, **kwargs) -> None:
+        """ Compile SASS files to CSS """
+        if not os.path.isdir(f"{self._static}/sass"):
+            return None
+
+        self._extra_dirs.append(f"{self._static}/sass")
+
+        try:
+            sass.compile(
+                dirname=[f"{self._static}/sass", f"{self._static}/css"],
+                output_style="compressed"
+            )
+        except Exception as e:
+            print(f"[-] SASS compile error | {type(e).__name__}: {e}")
+        else:
+            print(f"[+] SASS compiled to {self._static}/css")
 
     def generate(self, debug: bool = False, **kwargs) -> None:
         """ Generate the sites, kwargs are the arguments to pass to the template """
@@ -101,6 +131,8 @@ class Builder(Flask):
                         view_func=lambda x=filename_render: render_template(x, **kwargs),
                     )
 
+        self.sass_compiler()
+
         if not debug:
             self.freezer.freeze()
             try:
@@ -109,4 +141,8 @@ class Builder(Flask):
                 print(f"[-] Compile error | {type(e).__name__}:\n{e}")
             print(f"[+] Done, compiled to {self.config['FREEZER_DESTINATION']}")
         else:
-            self.run(port=self._port, debug=True)
+            self.config["TEMPLATES_AUTO_RELOAD"] = True
+            self.run(
+                port=self._port, debug=True,
+                extra_files=self._extra_file_watcher
+            )
