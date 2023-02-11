@@ -3,3 +3,4 @@ Flask
 Frozen-Flask
 markdown
 libsass
+htmlmin
