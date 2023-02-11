@@ -3,6 +3,8 @@ import os
 import markdown
 import re
 import sass
+import htmlmin
+
 
 from flask import Flask, render_template, render_template_string
 from flask_frozen import Freezer
@@ -77,7 +79,12 @@ class Builder(Flask):
         else:
             print(f"[+] SASS compiled to {self._static}/css")
 
-    def generate(self, debug: bool = False, **kwargs) -> None:
+    def _render_html(self, func: any, minify_html: bool = True):
+        if minify_html:
+            return htmlmin.minify(func, remove_empty_space=True)
+        return func
+
+    def generate(self, debug: bool = False, minify_html: bool = True, **kwargs) -> None:
         """ Generate the sites, kwargs are the arguments to pass to the template """
         for paths, dirs, files in os.walk(self._templates):
             for file in files:
@@ -123,12 +130,16 @@ class Builder(Flask):
 
                     self.add_url_rule(
                         url_path, f"{filename}_{secrets.token_hex(16)}",
-                        view_func=lambda x=to_render: x[2](x[0], **x[1]),
+                        view_func=lambda x=to_render: self._render_html(
+                            x[2](x[0], **x[1]), minify_html
+                        )
                     )
                 else:
                     self.add_url_rule(
                         url_path, f"{filename}_{secrets.token_hex(16)}",
-                        view_func=lambda x=filename_render: render_template(x, **kwargs),
+                        view_func=lambda x=filename_render: self._render_html(
+                            render_template(x, **kwargs), minify_html
+                        )
                     )
 
         self.sass_compiler()
